@@ -52,6 +52,12 @@ const (
 	defaultMaxBatchSize   = 25
 	defaultMaxConcurrency = 10
 	maxRequestAttempts    = 4
+	githubModelsMinGap    = 3 * time.Second
+)
+
+var (
+	githubModelsRateMu      sync.Mutex
+	githubModelsLastRequest time.Time
 )
 
 // NewNormalizer builds a concrete Normalizer implementation based on the provided config.
@@ -130,6 +136,9 @@ func newOpenAINormalizer(cfg Config) (*openAINormalizer, error) {
 		}
 		applyProxyToClient(httpClient, proxyURL)
 	}
+
+	isGitHubModels := strings.Contains(strings.ToLower(chatCompletionsURL), "models.github.ai")
+	utils.Log.Debugf("[ai] normalizer configured provider=%s model=%s endpoint=%s max_batch=%d max_concurrency=%d github_models_throttle=%t", cfg.Provider, model, chatCompletionsURL, maxBatch, maxConcurrency, isGitHubModels)
 
 	return &openAINormalizer{
 		apiKey:         apiKey,
@@ -344,6 +353,10 @@ func (n *openAINormalizer) queryLLM(ctx context.Context, info ProgramInfo, baseI
 
 func (n *openAINormalizer) doRequestWithRetry(ctx context.Context, body []byte) (*http.Response, error) {
 	for attempt := 1; attempt <= maxRequestAttempts; attempt++ {
+		if err := n.waitForRequestSlot(ctx); err != nil {
+			return nil, err
+		}
+
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.endpoint, bytes.NewReader(body))
 		if err != nil {
 			return nil, err
@@ -356,7 +369,7 @@ func (n *openAINormalizer) doRequestWithRetry(ctx context.Context, body []byte) 
 			if attempt == maxRequestAttempts {
 				return nil, err
 			}
-			delay := retryDelay("", attempt)
+			delay := retryDelay("", attempt, 0)
 			utils.Log.Debugf("[ai] request failed (attempt %d/%d): %v; retrying in %s", attempt, maxRequestAttempts, err, delay)
 			if err := sleepWithContext(ctx, delay); err != nil {
 				return nil, err
@@ -369,7 +382,7 @@ func (n *openAINormalizer) doRequestWithRetry(ctx context.Context, body []byte) 
 				return resp, nil
 			}
 
-			delay := retryDelay(resp.Header.Get("Retry-After"), attempt)
+			delay := retryDelay(resp.Header.Get("Retry-After"), attempt, resp.StatusCode)
 			utils.Log.Debugf("[ai] received HTTP %d (attempt %d/%d); retrying in %s", resp.StatusCode, attempt, maxRequestAttempts, delay)
 			_, _ = io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
@@ -386,7 +399,7 @@ func (n *openAINormalizer) doRequestWithRetry(ctx context.Context, body []byte) 
 	return nil, errors.New("ai request retries exhausted")
 }
 
-func retryDelay(retryAfter string, attempt int) time.Duration {
+func retryDelay(retryAfter string, attempt int, statusCode int) time.Duration {
 	if secs, err := strconv.Atoi(strings.TrimSpace(retryAfter)); err == nil && secs > 0 {
 		return time.Duration(secs) * time.Second
 	}
@@ -394,6 +407,14 @@ func retryDelay(retryAfter string, attempt int) time.Duration {
 		if d := time.Until(t); d > 0 {
 			return d
 		}
+	}
+
+	if statusCode == http.StatusTooManyRequests {
+		d := time.Duration(attempt*10) * time.Second
+		if d > 60*time.Second {
+			return 60 * time.Second
+		}
+		return d
 	}
 
 	base := time.Second
@@ -404,6 +425,28 @@ func retryDelay(retryAfter string, attempt int) time.Duration {
 		return 12 * time.Second
 	}
 	return base
+}
+
+func (n *openAINormalizer) waitForRequestSlot(ctx context.Context) error {
+	if !strings.Contains(strings.ToLower(n.endpoint), "models.github.ai") {
+		return nil
+	}
+
+	githubModelsRateMu.Lock()
+	defer githubModelsRateMu.Unlock()
+
+	if !githubModelsLastRequest.IsZero() {
+		wait := githubModelsMinGap - time.Since(githubModelsLastRequest)
+		if wait > 0 {
+			utils.Log.Debugf("[ai] github models throttle active; waiting %s before next request", wait)
+			if err := sleepWithContext(ctx, wait); err != nil {
+				return err
+			}
+		}
+	}
+
+	githubModelsLastRequest = time.Now()
+	return nil
 }
 
 func sleepWithContext(ctx context.Context, d time.Duration) error {
