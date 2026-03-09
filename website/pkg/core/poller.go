@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/ai"
-	"github.com/sw33tLie/bbscope/v2/pkg/platforms"
-	bcplatform "github.com/sw33tLie/bbscope/v2/pkg/platforms/bugcrowd"
-	h1platform "github.com/sw33tLie/bbscope/v2/pkg/platforms/hackerone"
-	itplatform "github.com/sw33tLie/bbscope/v2/pkg/platforms/intigriti"
-	ywhplatform "github.com/sw33tLie/bbscope/v2/pkg/platforms/yeswehack"
-	"github.com/sw33tLie/bbscope/v2/pkg/polling"
+	"github.com/fabse-hack/bbscope/v2/pkg/ai"
+	"github.com/fabse-hack/bbscope/v2/pkg/platforms"
+	bcplatform "github.com/fabse-hack/bbscope/v2/pkg/platforms/bugcrowd"
+	h1platform "github.com/fabse-hack/bbscope/v2/pkg/platforms/hackerone"
+	itplatform "github.com/fabse-hack/bbscope/v2/pkg/platforms/intigriti"
+	ywhplatform "github.com/fabse-hack/bbscope/v2/pkg/platforms/yeswehack"
+	"github.com/fabse-hack/bbscope/v2/pkg/polling"
 )
 
 const pollConcurrency = 5

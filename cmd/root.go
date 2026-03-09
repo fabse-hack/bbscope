@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/sw33tLie/bbscope/v2/internal/utils"
-	"github.com/sw33tLie/bbscope/v2/pkg/whttp"
+	"github.com/fabse-hack/bbscope/v2/internal/utils"
+	"github.com/fabse-hack/bbscope/v2/pkg/whttp"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"

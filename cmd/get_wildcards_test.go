@@ -3,8 +3,8 @@ package cmd
 import (
 	"testing"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/storage"
-	"github.com/sw33tLie/bbscope/v2/pkg/targets"
+	"github.com/fabse-hack/bbscope/v2/pkg/storage"
+	"github.com/fabse-hack/bbscope/v2/pkg/targets"
 )
 
 func TestCollectWildcards_NonAggressiveExplicitOnly(t *testing.T) {

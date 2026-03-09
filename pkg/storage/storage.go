@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/sw33tLie/bbscope/v2/pkg/scope"
+	"github.com/fabse-hack/bbscope/v2/pkg/scope"
 )
 
 var (

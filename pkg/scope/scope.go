@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sw33tLie/bbscope/v2/internal/utils"
+	"github.com/fabse-hack/bbscope/v2/internal/utils"
 )
 
 type ScopeElement struct {

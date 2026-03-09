@@ -45,7 +45,7 @@ Visit [bbscope.com](https://bbscope.com/) to explore an hourly-updated list of p
 Ensure you have a recent version of Go installed, then run:
 
 ```bash
-go install github.com/sw33tLie/bbscope/v2@latest
+go install github.com/fabse-hack/bbscope/v2@latest
 ```
 
 ### Docker Installation
@@ -54,12 +54,12 @@ You can also run `bbscope` using Docker. The Docker image is automatically built
 
 **Pull the latest image:**
 ```bash
-docker pull ghcr.io/sw33tlie/bbscope:latest
+docker pull ghcr.io/fabse-hack/bbscope:latest
 ```
 
 **Run bbscope with Docker:**
 ```bash
-docker run --rm ghcr.io/sw33tlie/bbscope:latest [command] [flags]
+docker run --rm ghcr.io/fabse-hack/bbscope:latest [command] [flags]
 ```
 
 **Tip:** Add `--pull=always` to the command if you want to automatically always use the latest bbscope version.
@@ -70,7 +70,7 @@ docker run --rm ghcr.io/sw33tlie/bbscope:latest [command] [flags]
 # Run with config mounted
 docker run --rm \
   -v ~/.bbscope.yaml:/root/.bbscope.yaml \
-  ghcr.io/sw33tlie/bbscope:latest poll --db -b -p
+  ghcr.io/fabse-hack/bbscope:latest poll --db -b -p
 ```
 
 **Note:** The container connects to your PostgreSQL database using the `db_url` configured in `~/.bbscope.yaml`. Make sure your database is accessible from the container (use `host.docker.internal` for local databases on macOS/Windows, or your database's network address).

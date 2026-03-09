@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sw33tLie/bbscope/v2/internal/utils"
-	"github.com/sw33tLie/bbscope/v2/pkg/whttp"
+	"github.com/fabse-hack/bbscope/v2/internal/utils"
+	"github.com/fabse-hack/bbscope/v2/pkg/whttp"
 	"github.com/tidwall/gjson"
 )
 

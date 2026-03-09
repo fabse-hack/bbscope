@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/storage"
-	"github.com/sw33tLie/bbscope/v2/pkg/targets"
+	"github.com/fabse-hack/bbscope/v2/pkg/storage"
+	"github.com/fabse-hack/bbscope/v2/pkg/targets"
 )
 
 var getWildcardsCmd = &cobra.Command{

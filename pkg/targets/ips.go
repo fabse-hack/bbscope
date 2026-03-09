@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/storage"
+	"github.com/fabse-hack/bbscope/v2/pkg/storage"
 )
 
 // CollectIPs returns in-scope targets that are IP addresses.

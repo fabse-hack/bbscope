@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/scope"
-	"github.com/sw33tLie/bbscope/v2/pkg/storage"
-	"github.com/sw33tLie/bbscope/v2/pkg/targets"
+	"github.com/fabse-hack/bbscope/v2/pkg/scope"
+	"github.com/fabse-hack/bbscope/v2/pkg/storage"
+	"github.com/fabse-hack/bbscope/v2/pkg/targets"
 )
 
 // API cache for program list — separate slots for AI-enhanced and raw modes.

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/scope"
+	"github.com/fabse-hack/bbscope/v2/pkg/scope"
 )
 
 // RemoveCustomTarget removes a custom target from the database.

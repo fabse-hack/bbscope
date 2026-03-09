@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/storage"
+	"github.com/fabse-hack/bbscope/v2/pkg/storage"
 )
 
 // CollectCIDRs returns in-scope targets that are CIDR ranges or IP ranges.

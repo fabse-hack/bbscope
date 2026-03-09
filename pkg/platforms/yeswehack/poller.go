@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/otp"
-	"github.com/sw33tLie/bbscope/v2/pkg/platforms"
-	"github.com/sw33tLie/bbscope/v2/pkg/scope"
-	"github.com/sw33tLie/bbscope/v2/pkg/whttp"
+	"github.com/fabse-hack/bbscope/v2/pkg/otp"
+	"github.com/fabse-hack/bbscope/v2/pkg/platforms"
+	"github.com/fabse-hack/bbscope/v2/pkg/scope"
+	"github.com/fabse-hack/bbscope/v2/pkg/whttp"
 	"github.com/tidwall/gjson"
 )
 

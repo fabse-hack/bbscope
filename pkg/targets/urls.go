@@ -3,7 +3,7 @@ package targets
 import (
 	"strings"
 
-	"github.com/sw33tLie/bbscope/v2/pkg/storage"
+	"github.com/fabse-hack/bbscope/v2/pkg/storage"
 )
 
 // CollectURLs returns in-scope targets that are URLs (http:// or https://).
