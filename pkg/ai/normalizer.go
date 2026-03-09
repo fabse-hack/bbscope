@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -49,6 +51,7 @@ const (
 	defaultEndpoint       = "https://models.github.ai/inference"
 	defaultMaxBatchSize   = 25
 	defaultMaxConcurrency = 10
+	maxRequestAttempts    = 4
 )
 
 // NewNormalizer builds a concrete Normalizer implementation based on the provided config.
@@ -280,7 +283,6 @@ func (n *openAINormalizer) queryLLM(ctx context.Context, info ProgramInfo, baseI
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: string(payloadJSON)},
 		},
-		Temperature:    0.1,
 		ResponseFormat: openAIResponseFormat{Type: "json_object"},
 	}
 
@@ -289,14 +291,7 @@ func (n *openAINormalizer) queryLLM(ctx context.Context, info ProgramInfo, baseI
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.endpoint, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+n.apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := n.client.Do(req)
+	resp, err := n.doRequestWithRetry(ctx, bodyBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -345,6 +340,82 @@ func (n *openAINormalizer) queryLLM(ctx context.Context, info ProgramInfo, baseI
 	}
 
 	return result, nil
+}
+
+func (n *openAINormalizer) doRequestWithRetry(ctx context.Context, body []byte) (*http.Response, error) {
+	for attempt := 1; attempt <= maxRequestAttempts; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.endpoint, bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bearer "+n.apiKey)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := n.client.Do(req)
+		if err != nil {
+			if attempt == maxRequestAttempts {
+				return nil, err
+			}
+			delay := retryDelay("", attempt)
+			utils.Log.Debugf("[ai] request failed (attempt %d/%d): %v; retrying in %s", attempt, maxRequestAttempts, err, delay)
+			if err := sleepWithContext(ctx, delay); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+			if attempt == maxRequestAttempts {
+				return resp, nil
+			}
+
+			delay := retryDelay(resp.Header.Get("Retry-After"), attempt)
+			utils.Log.Debugf("[ai] received HTTP %d (attempt %d/%d); retrying in %s", resp.StatusCode, attempt, maxRequestAttempts, delay)
+			_, _ = io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+
+			if err := sleepWithContext(ctx, delay); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		return resp, nil
+	}
+
+	return nil, errors.New("ai request retries exhausted")
+}
+
+func retryDelay(retryAfter string, attempt int) time.Duration {
+	if secs, err := strconv.Atoi(strings.TrimSpace(retryAfter)); err == nil && secs > 0 {
+		return time.Duration(secs) * time.Second
+	}
+	if t, err := http.ParseTime(strings.TrimSpace(retryAfter)); err == nil {
+		if d := time.Until(t); d > 0 {
+			return d
+		}
+	}
+
+	base := time.Second
+	if attempt > 1 {
+		base = time.Duration(1<<(attempt-1)) * time.Second
+	}
+	if base > 12*time.Second {
+		return 12 * time.Second
+	}
+	return base
+}
+
+func sleepWithContext(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
 }
 
 var systemPrompt = buildSystemPrompt()
@@ -405,7 +476,7 @@ Output contract (strict)
 type openAIChatRequest struct {
 	Model          string               `json:"model"`
 	Messages       []openAIMessage      `json:"messages"`
-	Temperature    float64              `json:"temperature"`
+	Temperature    *float64             `json:"temperature,omitempty"`
 	ResponseFormat openAIResponseFormat `json:"response_format"`
 }
 
