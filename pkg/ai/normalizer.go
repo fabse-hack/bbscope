@@ -44,7 +44,7 @@ type Normalizer interface {
 }
 
 const (
-	defaultProvider       = "openrouter"
+	defaultProvider       = "openai"
 	defaultModel          = "openai/gpt-5"
 	defaultEndpoint       = "https://models.github.ai/inference"
 	defaultMaxBatchSize   = 25
@@ -59,7 +59,7 @@ func NewNormalizer(cfg Config) (Normalizer, error) {
 	}
 
 	switch cfg.Provider {
-	case "openai":
+	case "openai", "openrouter":
 		return newOpenAINormalizer(cfg)
 	default:
 		return nil, fmt.Errorf("unsupported AI provider: %s", cfg.Provider)
@@ -101,6 +101,10 @@ func newOpenAINormalizer(cfg Config) (*openAINormalizer, error) {
 	if endpoint == "" {
 		endpoint = defaultEndpoint
 	}
+	chatCompletionsURL, err := normalizeChatCompletionsEndpoint(endpoint)
+	if err != nil {
+		return nil, err
+	}
 
 	maxBatch := cfg.MaxBatch
 	if maxBatch <= 0 {
@@ -127,11 +131,38 @@ func newOpenAINormalizer(cfg Config) (*openAINormalizer, error) {
 	return &openAINormalizer{
 		apiKey:         apiKey,
 		model:          model,
-		endpoint:       endpoint,
+		endpoint:       chatCompletionsURL,
 		maxBatchSize:   maxBatch,
 		maxConcurrency: maxConcurrency,
 		client:         httpClient,
 	}, nil
+}
+
+func normalizeChatCompletionsEndpoint(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", errors.New("ai endpoint cannot be empty")
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", fmt.Errorf("invalid ai endpoint: %w", err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", fmt.Errorf("invalid ai endpoint: expected absolute URL, got %q", raw)
+	}
+
+	cleanPath := strings.TrimSuffix(u.Path, "/")
+	switch {
+	case strings.HasSuffix(cleanPath, "/chat/completions"):
+		// Endpoint already points to the chat-completions route.
+	case cleanPath == "" || cleanPath == "/inference" || cleanPath == "/v1":
+		u.Path = cleanPath + "/chat/completions"
+	default:
+		u.Path = cleanPath + "/chat/completions"
+	}
+
+	return u.String(), nil
 }
 
 // NormalizeTargets applies AI-powered cleanup, expanding or correcting malformed entries
