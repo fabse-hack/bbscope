@@ -44,9 +44,9 @@ type Normalizer interface {
 }
 
 const (
-	defaultProvider       = "openai"
-	defaultModel          = "gpt-4.1-mini"
-	defaultEndpoint       = "https://api.openai.com/v1/chat/completions"
+	defaultProvider       = "openrouter"
+	defaultModel          = "openai/gpt-5"
+	defaultEndpoint       = "https://models.github.ai/inference"
 	defaultMaxBatchSize   = 25
 	defaultMaxConcurrency = 10
 )
